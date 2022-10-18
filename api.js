@@ -1,14 +1,19 @@
-const { default: axios } = require('axios')
+const axios = require('axios')
 const dayjs = require('dayjs')
 const duration = require('dayjs/plugin/duration')
 const { baseURL, cookie, deviceId, bark } = require('./config')
 require('./console')
 
 dayjs.extend(duration)
+let cookies = []
 
-let cookies = (typeof cookie === 'object' ? cookie : cookie.split('\n')).filter(
-  v => v
-)
+if (Array.isArray(cookie)) cookies = cookie
+else if (cookie.indexOf('&') > -1) cookies = cookie.split('&')
+else if (cookie.indexOf('\n') > -1) cookies = cookie.split('\n')
+else cookies = [cookie]
+
+cookies = cookies.filter(v => v)
+
 let currentCookie = ''
 
 if (!cookies.length) {
@@ -59,7 +64,7 @@ function sendBarkMsg(msg) {
   return barkAxios({
     method: 'get',
     url: `${bark}/${encodeURIComponent('xmtravel')}/${encodeURIComponent(
-      msg
+      `账号${cookies.indexOf(currentCookie) + 1} ` + msg
     )}?group=${encodeURIComponent('xmtravel')}`
   })
 }
@@ -252,7 +257,7 @@ async function init() {
           // 本次旅行奖励领取后, 当月实际剩余旅行奖励
           if (currentPeriodCanConvertXmyNum - travelRewardXmy <= 0) {
             log('当月无可领取奖励')
-            return Promise.reject()
+            return false
           }
         }
 
